@@ -30,8 +30,12 @@
  *
  */
 
+#include <scrimmage/common/Utilities.h>
 #include <scrimmage/math/State.h>
 #include <scrimmage/math/Angles.h>
+
+#include <iostream>
+#include <iomanip>
 
 namespace scrimmage {
 
@@ -112,6 +116,18 @@ Eigen::Matrix4d State::tf_matrix(bool enable_translate) {
         0, 0, 0, 1;
 
     return m;
+}
+
+std::ostream& operator<<(std::ostream& os, const State& s) {
+    const Quaternion &q = s.quat_const();
+
+    os << "(" << eigen_str(s.pos_)
+        << "), (" << eigen_str(s.vel_)
+        << "), ("
+        << std::setprecision(2) << q.roll() << ", "
+        << std::setprecision(2) << q.pitch() << ", "
+        << std::setprecision(2) << q.yaw() << ")";
+    return os;
 }
 
 } // namespace scrimmage
