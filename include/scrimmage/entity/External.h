@@ -56,6 +56,8 @@
 
 namespace scrimmage {
 
+class Log;
+
 #ifdef ROSCPP_ROS_H
 template <class RosType, class Ros2Sc, class PostFunc>
 boost::function<void(const boost::shared_ptr<RosType const>&)>
@@ -98,6 +100,7 @@ class External {
     PluginManagerPtr plugin_manager_;
     int max_entities_;
     std::shared_ptr<GeographicLib::LocalCartesian> proj_;
+    std::shared_ptr<Log> log_;
 
 #ifdef ROSCPP_ROS_H
 
@@ -106,6 +109,9 @@ class External {
     std::vector<std::function<void()>> ros_pub_funcs_;
 
  public:
+
+    bool step(double t);
+
     void publish_all() {
         for (auto &func : ros_pub_funcs_) {
             func();

@@ -29,18 +29,23 @@
  * A Long description goes here.
  *
  */
+
+#include <scrimmage/autonomy/Autonomy.h>
+#include <scrimmage/common/Random.h>
+#include <scrimmage/common/RTree.h>
 #include <scrimmage/entity/External.h>
 #include <scrimmage/entity/Entity.h>
-#include <scrimmage/autonomy/Autonomy.h>
-#include <scrimmage/plugin_manager/PluginManager.h>
-#include <scrimmage/pubsub/Network.h>
-#include <scrimmage/common/Random.h>
 #include <scrimmage/entity/Contact.h>
-#include <scrimmage/common/RTree.h>
+#include <scrimmage/log/Log.h>
 #include <scrimmage/parse/MissionParse.h>
+#include <scrimmage/plugin_manager/PluginManager.h>
+#include <scrimmage/proto/ProtoConversions.h>
+#include <scrimmage/proto/Shape.pb.h>
+#include <scrimmage/pubsub/Network.h>
 
 #include <iostream>
 #include <memory>
+
 #include <GeographicLib/Geocentric.hpp>
 #include <GeographicLib/LocalCartesian.hpp>
 
@@ -100,6 +105,33 @@ bool External::create_entity(ID id,
     entity_->set_random(random);
 
     return true;
+}
+
+bool External::step(double t) {
+    // do all the scrimmage updates (e.g., step_autonomy, step controller, etc)
+    // incorporating motion_dt_
+
+    // do logging
+    log_->save_frame(create_frame(t, entity_->contacts()));
+
+    // shapes
+    scrimmage_proto::Shapes shapes;
+    shapes.set_time(t);
+    for (AutonomyPtr autonomy : entity_->autonomies()) {
+        for (auto autonomy_shape : autonomy->shapes()) {
+            // increase length of shapes by 1 (including mallocing a new object)
+            // return a pointer to the malloced object
+            scrimmage_proto::Shape *shape_at_end_of_shapes = shapes.add_shape();
+
+            // copy autonomy shape to list
+            *shape_at_end_of_shapes = *autonomy_shape;
+        }
+    }
+    log_->save_shapes(shapes);
+
+    // handle messaging
+    // FIXME - make this a protected function
+    publish_all();
 }
 
 } // namespace scrimmage
