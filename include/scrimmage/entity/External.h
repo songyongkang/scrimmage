@@ -37,8 +37,20 @@
 #include <scrimmage/common/FileSearch.h>
 #include <scrimmage/plugin_manager/PluginManager.h>
 
+// FIXME - remove these when the step function is moved into the cpp file
+#include <scrimmage/autonomy/Autonomy.h>
+#include <scrimmage/common/Utilities.h>
+#include <scrimmage/motion/Controller.h>
+#include <scrimmage/entity/Entity.h>
+#include <scrimmage/log/Log.h>
+#include <scrimmage/proto/ProtoConversions.h>
+#include <scrimmage/proto/Shape.pb.h>
+#include <algorithm>
+// end FIXME
+
 #include <map>
 #include <string>
+#include <cmath>
 
 #ifdef ROSCPP_ROS_H
 #include <scrimmage/entity/Entity.h>
@@ -80,8 +92,7 @@ create_cb(Ros2Sc ros2sc, SubscriberPtr sc_sub) {
 
 class External {
  public:
-    External() :
-        plugin_manager_(std::make_shared<PluginManager>()), max_entities_(-1) {}
+    External();
 
     NetworkPtr &network();
     EntityPtr &entity();
@@ -93,6 +104,55 @@ class External {
             std::map<std::string, std::string> &info,
             const std::string &log_dir);
 
+    double min_motion_dt = 1.0 / 120;
+
+    bool step(double t) {
+        // do all the scrimmage updates (e.g., step_autonomy, step controller, etc)
+        bool success = true;
+        const double dt = t - last_t_;
+        for (AutonomyPtr autonomy : entity_->autonomies()) {
+            success &= autonomy->step_autonomy(t, dt);
+        }
+
+        entity_->setup_desired_state();
+
+        double temp_motion_dt = std::min(dt, min_motion_dt);
+        const int num_steps = ceil(dt / temp_motion_dt);
+
+        std::vector<double> times = linspace(last_t_, t, num_steps);
+        temp_motion_dt = num_steps == 1 ? dt : times[1] - times[0];
+
+        for (double motion_time : times) {
+            for (ControllerPtr ctrl : entity_->controllers()) {
+                success &= ctrl->step(motion_time, temp_motion_dt);
+            }
+        }
+
+        // do logging (frames and shapes)
+        log_->save_frame(create_frame(t, entity_->contacts()));
+
+        scrimmage_proto::Shapes shapes;
+        shapes.set_time(t);
+        for (AutonomyPtr autonomy : entity_->autonomies()) {
+            for (auto autonomy_shape : autonomy->shapes()) {
+                // increase length of shapes by 1 (including mallocing a new object)
+                // return a pointer to the malloced object
+                scrimmage_proto::Shape *shape_at_end_of_shapes = shapes.add_shape();
+
+                // copy autonomy shape to list
+                *shape_at_end_of_shapes = *autonomy_shape;
+            }
+        }
+        log_->save_shapes(shapes);
+
+        // handle messaging
+        // FIXME - make this a protected function
+#ifdef ROSCPP_ROS_H
+        publish_all();
+#endif
+        return success;
+    }
+
  protected:
     NetworkPtr network_;
     EntityPtr entity_;
@@ -101,6 +161,7 @@ class External {
     int max_entities_;
     std::shared_ptr<GeographicLib::LocalCartesian> proj_;
     std::shared_ptr<Log> log_;
+    double last_t_;
 
 #ifdef ROSCPP_ROS_H
 
@@ -108,15 +169,13 @@ class External {
     std::vector<ros::ServiceServer> ros_service_servers_;
     std::vector<std::function<void()>> ros_pub_funcs_;
 
- public:
-
-    bool step(double t);
-
     void publish_all() {
         for (auto &func : ros_pub_funcs_) {
             func();
         }
     }
+
+ public:
 
     template <class ScrimmageType, class Sc2RosFunc>
     void add_pub(

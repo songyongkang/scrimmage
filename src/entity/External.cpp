@@ -54,6 +54,9 @@ using std::endl;
 
 namespace scrimmage {
 
+External::External() :
+    plugin_manager_(std::make_shared<PluginManager>()), max_entities_(-1) {}
+
 NetworkPtr &External::network() {return network_;}
 
 EntityPtr &External::entity() {return entity_;}
@@ -105,33 +108,6 @@ bool External::create_entity(ID id,
     entity_->set_random(random);
 
     return true;
-}
-
-bool External::step(double t) {
-    // do all the scrimmage updates (e.g., step_autonomy, step controller, etc)
-    // incorporating motion_dt_
-
-    // do logging
-    log_->save_frame(create_frame(t, entity_->contacts()));
-
-    // shapes
-    scrimmage_proto::Shapes shapes;
-    shapes.set_time(t);
-    for (AutonomyPtr autonomy : entity_->autonomies()) {
-        for (auto autonomy_shape : autonomy->shapes()) {
-            // increase length of shapes by 1 (including mallocing a new object)
-            // return a pointer to the malloced object
-            scrimmage_proto::Shape *shape_at_end_of_shapes = shapes.add_shape();
-
-            // copy autonomy shape to list
-            *shape_at_end_of_shapes = *autonomy_shape;
-        }
-    }
-    log_->save_shapes(shapes);
-
-    // handle messaging
-    // FIXME - make this a protected function
-    publish_all();
 }
 
 } // namespace scrimmage
