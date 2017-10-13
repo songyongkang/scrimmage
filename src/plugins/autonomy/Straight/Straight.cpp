@@ -30,6 +30,10 @@
  *
  */
 
+#include <iostream>
+using std::cout;
+using std::endl;
+
 #include <scrimmage/common/Utilities.h>
 #include <scrimmage/entity/Entity.h>
 #include <scrimmage/math/State.h>
@@ -66,6 +70,7 @@ void Straight::init(std::map<std::string, std::string> &params) {
     show_camera_images_ = scrimmage::get<bool>("show_camera_images", params, false);
     save_camera_images_ = scrimmage::get<bool>("save_camera_images", params, false);
     show_text_label_ = scrimmage::get<bool>("show_text_label", params, false);
+    direct_velocity_control_ = scrimmage::get<bool>("direct_velocity_control", params, false);
 
     if (save_camera_images_) {
         /////////////////////////////////////////////////////////
@@ -95,7 +100,7 @@ void Straight::init(std::map<std::string, std::string> &params) {
     desired_state_->pos() = state_->pos()(2)*Eigen::Vector3d::UnitZ();
 
     // Project goal in front...
-    Eigen::Vector3d rel_pos = Eigen::Vector3d::UnitX()*2000;
+    Eigen::Vector3d rel_pos = Eigen::Vector3d::UnitX()*1000;
     Eigen::Vector3d unit_vector = rel_pos.normalized();
     unit_vector = state_->quat().rotate(unit_vector);
     goal_ = state_->pos() + unit_vector * rel_pos.norm();
@@ -156,20 +161,24 @@ bool Straight::step_autonomy(double t, double dt) {
     ///////////////////////////////////////////////////////////////////////////
     // Convert desired velocity to desired speed, heading, and pitch controls
     ///////////////////////////////////////////////////////////////////////////
-    desired_state_->vel()(0) = v.norm();
+    if (direct_velocity_control_) {
+        desired_state_->vel() = v;
+    } else {
+        desired_state_->vel()(0) = v.norm();
 
-    // Desired heading
-    double heading = scrimmage::Angles::angle_2pi(atan2(v(1), v(0)));
+        // Desired heading
+        double heading = scrimmage::Angles::angle_2pi(atan2(v(1), v(0)));
 
-    // Desired pitch
-    Eigen::Vector2d xy(v(0), v(1));
-    double pitch = scrimmage::Angles::angle_2pi(atan2(v(2), xy.norm()));
+        // Desired pitch
+        Eigen::Vector2d xy(v(0), v(1));
+        double pitch = scrimmage::Angles::angle_2pi(atan2(v(2), xy.norm()));
 
-    // Set Desired Altitude to goal's z-position
-    desired_state_->pos()(2) = goal_(2);
+        // Set Desired Altitude to goal's z-position
+        desired_state_->pos()(2) = goal_(2);
 
-    // Set the desired pitch and heading
-    desired_state_->quat().set(0, pitch, heading);
+        // Set the desired pitch and heading
+        desired_state_->quat().set(0, pitch, heading);
+    }
 
     return true;
 }

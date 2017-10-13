@@ -30,29 +30,22 @@
  *
  */
 
-#ifndef INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_STRAIGHT_STRAIGHT_H_
-#define INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_STRAIGHT_STRAIGHT_H_
-#include <scrimmage/autonomy/Autonomy.h>
-
-#include <Eigen/Dense>
+#ifndef INCLUDE_SCRIMMAGE_PLUGINS_MOTION_SIMPLEQUADROTOR_SIMPLEQUADROTORCONTROLLERDirect_SIMPLEQUADROTORCONTROLLERDirect_H_
+#define INCLUDE_SCRIMMAGE_PLUGINS_MOTION_SIMPLEQUADROTOR_SIMPLEQUADROTORCONTROLLERDirect_SIMPLEQUADROTORCONTROLLERDirect_H_
 
 #include <map>
 #include <string>
 
-class Straight : public scrimmage::Autonomy{
+#include "../SimpleQuadrotor.h"
+
+class SimpleQuadrotorControllerDirect : public SimpleQuadrotor::Controller {
  public:
-     virtual void init(std::map<std::string, std::string> &params);
-     virtual bool step_autonomy(double t, double dt);
+    virtual void init(std::map<std::string, std::string> &params);
+    virtual bool step(double t, double dt);
+    virtual Eigen::Vector4d &u() {return u_;}
 
  protected:
-     double speed_;
-     Eigen::Vector3d goal_;
-
-     int frame_number_;
-     bool show_camera_images_;
-     bool save_camera_images_;
-     bool show_text_label_;
-     bool direct_velocity_control_;
+    Eigen::Vector4d u_;
 };
 
-#endif // INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_STRAIGHT_STRAIGHT_H_
+#endif // INCLUDE_SCRIMMAGE_PLUGINS_MOTION_SIMPLEQUADROTOR_SIMPLEQUADROTORCONTROLLERDirect_SIMPLEQUADROTORCONTROLLERDirect_H_

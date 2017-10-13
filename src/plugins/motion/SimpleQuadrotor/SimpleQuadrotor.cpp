@@ -99,6 +99,9 @@ bool SimpleQuadrotor::step(double time, double dt) {
     return true;
 }
 
+#include <iostream>
+using std::endl;
+using std::cout;
 void SimpleQuadrotor::model(const vector_t &x , vector_t &dxdt , double t) {
     /// 0 : x-position
     /// 1 : y-position
@@ -112,6 +115,8 @@ void SimpleQuadrotor::model(const vector_t &x , vector_t &dxdt , double t) {
     Eigen::Vector4d &u = std::static_pointer_cast<Controller>(parent_->controllers().back())->u();
     double max_x_velocity = 15;
     double max_z_velocity = 10;
+
+    cout << "motion u: " << u << endl;
 
     double x_thrust = u[X_THRUST];
     double y_thrust = u[Y_THRUST];

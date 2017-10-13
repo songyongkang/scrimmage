@@ -30,29 +30,37 @@
  *
  */
 
-#ifndef INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_STRAIGHT_STRAIGHT_H_
-#define INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_STRAIGHT_STRAIGHT_H_
-#include <scrimmage/autonomy/Autonomy.h>
+#include <scrimmage/common/Utilities.h>
+#include <scrimmage/math/Angles.h>
+#include <scrimmage/parse/ParseUtils.h>
+#include <scrimmage/plugin_manager/RegisterPlugin.h>
+#include <scrimmage/plugins/motion/SimpleQuadrotor/SimpleQuadrotorControllerDirect/SimpleQuadrotorControllerDirect.h>
 
-#include <Eigen/Dense>
+#include <boost/algorithm/clamp.hpp>
 
-#include <map>
-#include <string>
+REGISTER_PLUGIN(scrimmage::Controller,
+                SimpleQuadrotorControllerDirect,
+                SimpleQuadrotorControllerDirect_plugin)
 
-class Straight : public scrimmage::Autonomy{
- public:
-     virtual void init(std::map<std::string, std::string> &params);
-     virtual bool step_autonomy(double t, double dt);
+namespace sc = scrimmage;
 
- protected:
-     double speed_;
-     Eigen::Vector3d goal_;
+#include <iostream>
+using std::endl;
+using std::cout;
 
-     int frame_number_;
-     bool show_camera_images_;
-     bool save_camera_images_;
-     bool show_text_label_;
-     bool direct_velocity_control_;
-};
+void SimpleQuadrotorControllerDirect::init(std::map<std::string, std::string> &params)
+{}
 
-#endif // INCLUDE_SCRIMMAGE_PLUGINS_AUTONOMY_STRAIGHT_STRAIGHT_H_
+bool SimpleQuadrotorControllerDirect::step(double t, double dt) {
+    //double des_yaw = desired_state_->quat().yaw();
+
+    double turn_force = 0;
+    u_(0) = desired_state_->vel()(0);
+    u_(1) = desired_state_->vel()(1);
+    u_(2) = desired_state_->vel()(2);
+    u_(3) = turn_force;
+
+    cout << "u: " << u_ << endl;
+
+    return true;
+}
