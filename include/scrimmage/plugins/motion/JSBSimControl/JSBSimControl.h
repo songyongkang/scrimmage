@@ -64,7 +64,7 @@ class JSBSimControl : public scrimmage::MotionModel{
 
     class Controller : public scrimmage::Controller {
      public:
-        virtual Eigen::Vector3d &u() = 0;
+        virtual Eigen::Vector4d &u() = 0;
     };
 
  protected:
