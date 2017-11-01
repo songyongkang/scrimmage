@@ -151,6 +151,10 @@ class ScrimmageEnv(gym.Env):
         return [seed]
 
     def _start_scrimmage(self, enable_gui, disable_output):
+        _clear_queue(self.queues['action'])
+        _clear_queue(self.queues['action_response'])
+        _clear_queue(self.queues['env'])
+
         port = self.address.split(":")[-1]
         tree = ET.parse(self.mission_file)
         root = tree.getroot()
@@ -228,7 +232,7 @@ class ScrimmageEnv(gym.Env):
         shutdown the network to the autonomy in addition to sending a
         sigint.
         """
-        if self.scrimmage_process:
+        if self.scrimmage_process.returncode is None:
             temp_mission_file = "." + os.path.basename(self.mission_file)
             try:
                 os.remove(temp_mission_file)
@@ -238,11 +242,13 @@ class ScrimmageEnv(gym.Env):
             self.queues['action'].put(ExternalControl_pb2.Action(done=True))
             try:
                 self.scrimmage_process.kill()
-                self.scrimmage_process.wait()
+                self.scrimmage_process.poll()
+                while self.scrimmage_process.returncode is None:
+                    self.scrimmage_process.poll()
+                    time.sleep(0.1)
             except OSError:
                 print('could not terminate existing scrimmage process. '
                       'It may have already shutdown.')
-            self.scrimmage_process.wait()
 
 
 class ExternalControl(ExternalControl_pb2_grpc.ExternalControlServicer):

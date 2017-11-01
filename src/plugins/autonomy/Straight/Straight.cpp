@@ -186,7 +186,7 @@ bool Straight::step_autonomy(double t, double dt) {
     desired_state_->pos()(2) = goal_(2);
 
     // Set the desired pitch and heading
-    desired_state_->quat().set(0, pitch, heading);
+    desired_state_->quat().set(0, 0, heading);
 
     return true;
 }

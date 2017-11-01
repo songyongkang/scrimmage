@@ -185,5 +185,6 @@ scrimmage_proto::SpaceParams ExternalControl::action_space_params() {
 }
 
 void ExternalControl::close(double t) {
+    std::cout << "sending close" << std::endl;
     send_action_result(t, 0, true);
 }
