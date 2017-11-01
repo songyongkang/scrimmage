@@ -80,7 +80,9 @@ class ScrimmageEnv(gym.Env):
 
         # startup headless version of scrimmage to get the environment
         self.scrimmage_process = self._start_scrimmage(False, True)
+        print('__init__: 1')
         environment = self.queues['env'].get()
+        print('__init__: 2')
         self._terminate_scrimmage()
 
         try:
@@ -212,7 +214,9 @@ class ScrimmageEnv(gym.Env):
         self.server_thread.stop = True
 
     def _return_action_result(self):
+        print('resturn_actino_result: 1')
         res = self.queues['action_response'].get()
+        print('resturn_actino_result: 2')
         if isinstance(self.observation_space, gym.spaces.Tuple):
             size_discrete = self.observation_space.spaces[0].num_discrete_space
             discrete_obs = np.array(res.observations.value[:size_discrete])
@@ -243,9 +247,13 @@ class ScrimmageEnv(gym.Env):
             try:
                 self.scrimmage_process.kill()
                 self.scrimmage_process.poll()
+                print('terminating1')
                 while self.scrimmage_process.returncode is None:
+                    print('terminating2')
                     self.scrimmage_process.poll()
+                    print('terminating3')
                     time.sleep(0.1)
+                print('terminating4')
             except OSError:
                 print('could not terminate existing scrimmage process. '
                       'It may have already shutdown.')
@@ -267,7 +275,9 @@ class ExternalControl(ExternalControl_pb2_grpc.ExternalControlServicer):
     def SendActionResult(self, action_result, context):
         """Receive ActionResult proto and send back an action."""
         self.queues['action_response'].put(action_result)
+        print('action: 1')
         action = self.queues['action'].get()
+        print('action: 2')
         return action
 
 
@@ -314,8 +324,12 @@ def _create_tuple_space(space_params):
 
 
 def _clear_queue(q):
+    print('clear queue: 1')
     try:
         while True:
+            print('clear queue: 2')
             q.get(False)
+            print('clear queue: 3')
+        print('clear queue: 4')
     except queue.Empty:
         pass
